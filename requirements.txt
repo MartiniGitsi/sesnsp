@@ -1,6 +1,6 @@
 pandas
 numpy
 streamlit
-MongoClient
+pymongo
 datetime
 matplotlib
