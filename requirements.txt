@@ -1,0 +1,6 @@
+pandas
+numpy
+streamlit
+MongoClient
+datetime
+matplotlib
