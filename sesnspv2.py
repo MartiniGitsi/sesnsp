@@ -137,20 +137,20 @@ st.title(":arrow_right: Generación de gráficas delictivas") #Título
 
 # Sidebar Streamlit
 st.sidebar.header("🔧 Ajustes")
-nom_agrupador_selecc = st.sidebar.selectbox(":rotating_light: Selecciona un delito:", dfCabAgrp['Nombre_Agrupador_Delito'])
+nom_agrupador_selecc = st.sidebar.selectbox(":rotating_light: Seleccione un delito:", dfCabAgrp['Nombre_Agrupador_Delito'])
 IdAgrupDel= list (dfCabAgrp.loc[dfCabAgrp['Nombre_Agrupador_Delito'] == nom_agrupador_selecc, 'Id_Agrupador_Delito'])[0]
 
 with st.sidebar.expander(":earth_americas: Control de ubicaciones"):
   tipo_ubicacion = st.radio('Seleccione:', ['Entidades','Municipios 800K+','Municipios 500K+','Municipios 300K+','Municipios 100K+','Todos los municipios'])    
 with st.sidebar.expander(":chart_with_upwards_trend: Formato de la gráfica"):
-  AnchoBar = st.select_slider("Selecciona el ancho de barra:", options= np.arange (5,20,0.5), value =10.5)
-  AnchoLinea = st.select_slider("Selecciona el ancho de línea:", options= np.arange (2.5,10,0.5), value =4)
-  tipo_linea = st.selectbox("Selecciona tipo de línea2:", ['-', '--', '-.', ':', 'None'])
+  AnchoBar = st.select_slider("Seleccione el ancho de barra:", options= np.arange (5,20,0.5), value =10.5)
+  AnchoLinea = st.select_slider("Seleccione el ancho de línea:", options= np.arange (2.5,10,0.5), value =4)
+  tipo_linea = st.selectbox("Seleccione tipo de línea:", ['-', '--', '-.', ':', 'None'])
   selected_color_barra = st.color_picker("Seleccione color para barra:", "#2f4f4f") #darkslategrey
   selected_color_linea = st.color_picker("Seleccione color para línea:", "#FF796C") #salmon
 
 #Cuerpo Streamlit
-nom_ubic_selecc = st.selectbox(":round_pushpin: Selecciona ubicación:", get_ubicaciones (tipo_ubicacion))
+nom_ubic_selecc = st.selectbox(":round_pushpin: Seleccione ubicación:", get_ubicaciones (tipo_ubicacion))
 if tipo_ubicacion == 'Entidades':
   IdUbic = list (dfEnt.loc[dfEnt['NOM_ENT'] == nom_ubic_selecc, 'CVE_ENT'])[0]
   pob_ubi = int (list (dfEnt.loc[dfEnt['NOM_ENT'] == nom_ubic_selecc, 'Num_Habs'])[0])  
@@ -164,7 +164,7 @@ st.caption('<p style="text-align: right;">' + txt_habitantes + '</p>', unsafe_al
 list_aniomes = dfAniomes['Aniomes'].unique()
 list_aniomes.sort()
 Aniomes_Ini, Aniomes_Fin = st.select_slider(
-    ":calendar: Selecciona los meses a considerar:",
+    ":calendar: Seleccione los meses a considerar:",
     options = list_aniomes,
     value = (list_aniomes[-12], list_aniomes[-1]))
 
