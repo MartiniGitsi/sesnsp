@@ -7,7 +7,10 @@ import datetime
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 
-uri = "mongodb+srv://usr_python:pepinoni887@cluster0.brm9o.mongodb.net/?retryWrites=true&w=majority"
+#uri = "mongodb+srv://usr_python:pepinoni887@cluster0.brm9o.mongodb.net/?retryWrites=true&w=majority"
+
+uri = st.secrets["mongodb_uri"]
+
 client = MongoClient(uri)
 db = client["dbmongo_sesnsp"]  # Nombre de la BD
 
@@ -121,14 +124,14 @@ def get_ubicaciones(tipo_ubicacion):
     case 'Entidades':
       return dfEnt['NOM_ENT']
     case 'Municipios 800K+':
-      return dfMun.loc[dfMun['Num_Habs'] >= 800000, 'mun_compuesto']    
+      return dfMun.loc[dfMun['Num_Habs'] >= 800000, 'mun_compuesto']
     case 'Municipios 500K+':
       return dfMun.loc[dfMun['Num_Habs'] >= 500000, 'mun_compuesto']
     case 'Municipios 300K+':
       return dfMun.loc[dfMun['Num_Habs'] >= 300000, 'mun_compuesto']
     case 'Municipios 100K+':
       return dfMun.loc[dfMun['Num_Habs'] >= 100000, 'mun_compuesto']
-    case 'Todos los municipios':      
+    case 'Todos los municipios':
       return dfMun['mun_compuesto']
 
 #------------------------
@@ -141,7 +144,7 @@ nom_agrupador_selecc = st.sidebar.selectbox(":rotating_light: Seleccione un deli
 IdAgrupDel= list (dfCabAgrp.loc[dfCabAgrp['Nombre_Agrupador_Delito'] == nom_agrupador_selecc, 'Id_Agrupador_Delito'])[0]
 
 with st.sidebar.expander(":earth_americas: Control de ubicaciones"):
-  tipo_ubicacion = st.radio('Seleccione:', ['Entidades','Municipios 800K+','Municipios 500K+','Municipios 300K+','Municipios 100K+','Todos los municipios'])    
+  tipo_ubicacion = st.radio('Seleccione:', ['Entidades','Municipios 800K+','Municipios 500K+','Municipios 300K+','Municipios 100K+','Todos los municipios'])
 with st.sidebar.expander(":chart_with_upwards_trend: Formato de la gráfica"):
   AnchoBar = st.select_slider("Seleccione el ancho de barra:", options= np.arange (5,20,0.5), value =10.5)
   AnchoLinea = st.select_slider("Seleccione el ancho de línea:", options= np.arange (2.5,10,0.5), value =4)
@@ -153,7 +156,7 @@ with st.sidebar.expander(":chart_with_upwards_trend: Formato de la gráfica"):
 nom_ubic_selecc = st.selectbox(":round_pushpin: Seleccione ubicación:", get_ubicaciones (tipo_ubicacion))
 if tipo_ubicacion == 'Entidades':
   IdUbic = list (dfEnt.loc[dfEnt['NOM_ENT'] == nom_ubic_selecc, 'CVE_ENT'])[0]
-  pob_ubi = int (list (dfEnt.loc[dfEnt['NOM_ENT'] == nom_ubic_selecc, 'Num_Habs'])[0])  
+  pob_ubi = int (list (dfEnt.loc[dfEnt['NOM_ENT'] == nom_ubic_selecc, 'Num_Habs'])[0])
 else:
   IdUbic = list (dfMun.loc[dfMun['mun_compuesto'] == nom_ubic_selecc, '_CVEMUN'])[0]
   pob_ubi = int (list (dfMun.loc[dfMun['mun_compuesto'] == nom_ubic_selecc, 'Num_Habs'])[0])
@@ -196,11 +199,11 @@ else:
       ] }
   results_mun = collection.find(query_mun)
   dfResUbi = pd.DataFrame(list(results_mun))
-  
+
 if "_id" in dfResUbi.columns:
   dfResUbi.drop(columns=["_id"], inplace=True)
 
-flag_resultados= bool (len (dfResUbi)) 
+flag_resultados= bool (len (dfResUbi))
 if flag_resultados: # si no hay recuperación de resultados se queda el dataframe original solo con Aniomes
   df= pd.merge (df, dfResUbi, on= 'Aniomes', how= 'left').fillna(0)
 
@@ -265,7 +268,7 @@ dftemp.replace([np.inf, -np.inf], np.nan, inplace=True)
 variacion_promedio = round (dftemp['Variacion'].mean(skipna=True),1)
 txt_variacion = str (variacion_promedio) + '%'
 col1, col2 = st.columns(2)
-with col1:    
+with col1:
     st.metric(label=":triangular_ruler: Variación mensual promedio", value="_", delta= txt_variacion, delta_color= "inverse")
 #with col2:
 #    st.metric(label="Variación últimos tres meses", value="_", delta="-2%", delta_color= "inverse")
