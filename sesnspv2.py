@@ -7,8 +7,6 @@ import datetime
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 
-#uri = "mongodb+srv://usr_python:pepinoni887@cluster0.brm9o.mongodb.net/?retryWrites=true&w=majority"
-
 uri = st.secrets["mongodb_uri"]
 
 client = MongoClient(uri)
