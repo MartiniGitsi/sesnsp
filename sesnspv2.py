@@ -151,7 +151,7 @@ with st.sidebar.expander(":chart_with_upwards_trend: Formato de la gráfica"):
   selected_color_linea = st.color_picker("Seleccione color para línea:", "#FF796C") #salmon
 
 #Cuerpo Streamlit
-nom_ubic_selecc = st.selectbox(":round_pushpin: Seleccione ubicación:", get_ubicaciones (tipo_ubicacion))
+nom_ubic_selecc = st.selectbox(":round_pushpin: Seleccione ubicación:", get_ubicaciones (tipo_ubicacion).sort_values())
 if tipo_ubicacion == 'Entidades':
   IdUbic = list (dfEnt.loc[dfEnt['NOM_ENT'] == nom_ubic_selecc, 'CVE_ENT'])[0]
   pob_ubi = int (list (dfEnt.loc[dfEnt['NOM_ENT'] == nom_ubic_selecc, 'Num_Habs'])[0])
@@ -220,6 +220,7 @@ if "_id" in dfResNal.columns:
 
 #Aquí se fusionan los datos de ubicación con los nacionales
 df= pd.merge (df, dfResNal, on= 'Aniomes')
+df.sort_values (by= 'Aniomes', inplace= True)
 
 #---------------------------------------------------
 #Contruir la gráfica
