@@ -4,3 +4,5 @@ streamlit
 pymongo
 datetime
 matplotlib
+psycopg2
+sqlalchemy
