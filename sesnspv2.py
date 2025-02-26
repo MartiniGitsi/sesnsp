@@ -1,3 +1,5 @@
+"""Module que será aplicación de Streamlit."""
+
 import pandas as pd
 import numpy as np
 import streamlit as st
@@ -188,6 +190,40 @@ def get_det_agrupador_delito():
 dfDetAgrp = get_det_agrupador_delito()
 
 
+@st.cache_data
+def get_Lugar():
+    if BASE_DE_DATOS == "mongodb":
+        collection = db["dfLugar"]
+        cursor = collection.find()
+        dfLugar = pd.DataFrame(list(cursor))
+        if "_id" in dfLugar.columns:
+            dfLugar.drop(columns=["_id"], inplace=True)
+    elif BASE_DE_DATOS == "postgresql":
+        query = 'SELECT * FROM "dfLugar"'
+        dfLugar = pd.read_sql_query(query, engine)
+    return dfLugar
+
+
+dfLugar = get_Lugar()
+
+
+@st.cache_data
+def get_poblacion_extendida():
+    if BASE_DE_DATOS == "mongodb":
+        collection = db["dfPobExtendida"]
+        cursor = collection.find()
+        dfPobExtendida = pd.DataFrame(list(cursor))
+        if "_id" in dfPobExtendida.columns:
+            dfPobExtendida.drop(columns=["_id"], inplace=True)
+    elif BASE_DE_DATOS == "postgresql":
+        query = 'SELECT * FROM "dfPobExtendida"'
+        dfPobExtendida = pd.read_sql_query(query, engine)
+    return dfPobExtendida
+
+
+dfPobExtendida = get_poblacion_extendida()
+
+
 # ------------------------
 # **Funciones**
 # Función para obtener Aniomes estilo np.datetime64
@@ -202,17 +238,19 @@ def get_dt64(Aniomes) -> np.datetime64:
 def get_ubicaciones(tipo_ubicacion):
     match tipo_ubicacion:
         case "Entidades":
-            return dfEnt["NOM_ENT"]
-        case "Municipios 800K+":
-            return dfMun.loc[dfMun["Num_Habs"] >= 800000, "mun_compuesto"]
-        case "Municipios 500K+":
-            return dfMun.loc[dfMun["Num_Habs"] >= 500000, "mun_compuesto"]
-        case "Municipios 300K+":
-            return dfMun.loc[dfMun["Num_Habs"] >= 300000, "mun_compuesto"]
-        case "Municipios 100K+":
-            return dfMun.loc[dfMun["Num_Habs"] >= 100000, "mun_compuesto"]
+            return dfLugar.loc[dfLugar["TIPO_LUGAR"] == "Entidad", "NOM_LUGAR"]
+        case "Metrópolis":
+            return dfLugar.loc[dfLugar["TIPO_LUGAR"] == "Metropoli", "NOM_LUGAR"]
+        # case "Municipios 800K+":
+        #    return dfMun.loc[dfMun["Num_Habs"] >= 800000, "mun_compuesto"]
+        # case "Municipios 500K+":
+        #    return dfMun.loc[dfMun["Num_Habs"] >= 500000, "mun_compuesto"]
+        # case "Municipios 300K+":
+        #    return dfMun.loc[dfMun["Num_Habs"] >= 300000, "mun_compuesto"]
+        # case "Municipios 100K+":
+        #    return dfMun.loc[dfMun["Num_Habs"] >= 100000, "mun_compuesto"]
         case "Todos los municipios":
-            return dfMun["mun_compuesto"]
+            return dfLugar.loc[dfLugar["TIPO_LUGAR"] == "Municipio", "NOM_LUGAR"]
 
 
 # ------------------------
@@ -236,13 +274,62 @@ with st.sidebar.expander(":earth_americas: Control de ubicaciones"):
         "Seleccione:",
         [
             "Entidades",
-            "Municipios 800K+",
-            "Municipios 500K+",
-            "Municipios 300K+",
-            "Municipios 100K+",
+            "Metrópolis",
+            # "Municipios 800K+",
+            # "Municipios 500K+",
+            # "Municipios 300K+",
+            # "Municipios 100K+",
             "Todos los municipios",
         ],
     )
+
+    nom_ubic_selecc = st.selectbox(
+        ":round_pushpin: Seleccione ubicación:",
+        get_ubicaciones(tipo_ubicacion).sort_values(),
+    )
+    if tipo_ubicacion == "Entidades":
+        IdUbic = list(
+            dfLugar.loc[
+                (dfLugar["TIPO_LUGAR"] == "Entidad")
+                & (dfLugar["NOM_LUGAR"] == nom_ubic_selecc),
+                "CVE_LUGAR",
+            ]
+        )[0]
+
+    elif tipo_ubicacion == "Metrópolis":
+        IdUbic = list(
+            dfLugar.loc[
+                (dfLugar["TIPO_LUGAR"] == "Metropoli")
+                & (dfLugar["NOM_LUGAR"] == nom_ubic_selecc),
+                "CVE_LUGAR",
+            ]
+        )[0]
+    else:
+        IdUbic = list(
+            dfLugar.loc[
+                (dfLugar["TIPO_LUGAR"] == "Municipio")
+                & (dfLugar["NOM_LUGAR"] == nom_ubic_selecc),
+                "CVE_LUGAR",
+            ]
+        )[0]
+
+    pob_ubi = int(
+        list(
+            dfPobExtendida.loc[
+                (dfPobExtendida["CVE_LUGAR"] == IdUbic)
+                & (dfPobExtendida["Year"] == MAX_YEAR),
+                "Num_Habs",
+            ]
+        )[0]
+    )
+
+    txt_habitantes = f"{pob_ubi:,}" + " habs." + " (est. " + str(MAX_YEAR) + ")"
+    st.caption(
+        '<p style="text-align: right;">' + txt_habitantes + "</p>",
+        unsafe_allow_html=True,
+    )
+
+
 with st.sidebar.expander(":chart_with_upwards_trend: Formato de la gráfica"):
     AnchoBar = st.select_slider(
         "Seleccione el ancho de barra:", options=np.arange(5, 20, 0.5), value=10.5
@@ -260,186 +347,163 @@ with st.sidebar.expander(":chart_with_upwards_trend: Formato de la gráfica"):
         "Seleccione color para línea:", "#FF796C"
     )  # salmon
 
+
 # Cuerpo Streamlit
-nom_ubic_selecc = st.selectbox(
-    ":round_pushpin: Seleccione ubicación:",
-    get_ubicaciones(tipo_ubicacion).sort_values(),
-)
-if tipo_ubicacion == "Entidades":
-    IdUbic = list(dfEnt.loc[dfEnt["NOM_ENT"] == nom_ubic_selecc, "CVE_ENT"])[0]
-    pob_ubi = int(list(dfEnt.loc[dfEnt["NOM_ENT"] == nom_ubic_selecc, "Num_Habs"])[0])
-else:
-    IdUbic = list(dfMun.loc[dfMun["mun_compuesto"] == nom_ubic_selecc, "_CVEMUN"])[0]
-    pob_ubi = int(
-        list(dfMun.loc[dfMun["mun_compuesto"] == nom_ubic_selecc, "Num_Habs"])[0]
+tab1, tab2 = st.tabs(["Grafica general", "Perfil de riesgo"])
+
+
+# Primera Tab
+with tab1:
+
+    list_aniomes = dfAniomes["Aniomes"].unique()
+    list_aniomes.sort()
+    Aniomes_Ini, Aniomes_Fin = st.select_slider(
+        ":calendar: Seleccione los meses a considerar:",
+        options=list_aniomes,
+        value=(list_aniomes[-12], list_aniomes[-1]),
     )
 
-txt_habitantes = f"{pob_ubi:,}" + " habs." + " (est. " + str(MAX_YEAR) + ")"
-st.caption(
-    '<p style="text-align: right;">' + txt_habitantes + "</p>", unsafe_allow_html=True
-)
+    # ---------------------------------------------------------------
+    # Empezar a construir el Dataframe deseado con todos los Aniomes
+    df = dfAniomes.loc[
+        (dfAniomes["Aniomes"] >= Aniomes_Ini) & (dfAniomes["Aniomes"] <= Aniomes_Fin),
+        "Aniomes",
+    ]
 
-list_aniomes = dfAniomes["Aniomes"].unique()
-list_aniomes.sort()
-Aniomes_Ini, Aniomes_Fin = st.select_slider(
-    ":calendar: Seleccione los meses a considerar:",
-    options=list_aniomes,
-    value=(list_aniomes[-12], list_aniomes[-1]),
-)
+    # ---------------------------------------------------
+    # Contruir la consulta
 
-# ---------------------------------------------------------------
-# Empezar a construir el Dataframe deseado con todos los Aniomes
-df = dfAniomes.loc[
-    (dfAniomes["Aniomes"] >= Aniomes_Ini) & (dfAniomes["Aniomes"] <= Aniomes_Fin),
-    "Aniomes",
-]
-
-# ---------------------------------------------------
-# Contruir la consulta por entidad y por municipio
-if tipo_ubicacion == "Entidades":
     if BASE_DE_DATOS == "mongodb":
-        collection = db["incidencia_ent"]
-        query_ent = {
+        collection = db["dfDefinitivo"]
+        query = {
             "$and": [
-                {"Id_Entidad": IdUbic},
+                {"CVE_LUGAR": IdUbic},
                 {"Aniomes": {"$gte": Aniomes_Ini}},
                 {"Aniomes": {"$lte": Aniomes_Fin}},
                 {"Id_Agrupador_Delito": IdAgrupDel},
             ]
         }
-        results_ent = collection.find(query_ent)
-        dfResUbi = pd.DataFrame(list(results_ent))
+        results = collection.find(query)
+        dfResUbi = pd.DataFrame(list(results))
     elif BASE_DE_DATOS == "postgresql":
-        query = f"SELECT * FROM incidencia_ent WHERE  \"Id_Entidad\" = '{IdUbic}' AND \"Aniomes\" >= '{Aniomes_Ini}' AND \"Aniomes\" <= '{Aniomes_Fin}' AND \"Id_Agrupador_Delito\" = '{IdAgrupDel}'"
+        query = f'SELECT * FROM "dfDefinitivo" WHERE  "CVE_LUGAR" = \'{IdUbic}\' AND "Aniomes" >= \'{Aniomes_Ini}\' AND "Aniomes" <= \'{Aniomes_Fin}\' AND "Id_Agrupador_Delito" = \'{IdAgrupDel}\''
         dfResUbi = pd.read_sql_query(query, engine)
-else:
+
+    if "_id" in dfResUbi.columns:  # solo aplica si el dataframe vino de Mongodb
+        dfResUbi.drop(columns=["_id"], inplace=True)
+
+    flag_resultados = bool(len(dfResUbi))
+    if (
+        flag_resultados
+    ):  # si no hay recuperación de resultados se queda el dataframe original solo con Aniomes
+        df = pd.merge(df, dfResUbi, on="Aniomes", how="left").fillna(0)
+
+    # Recuperar los datos nacionales
     if BASE_DE_DATOS == "mongodb":
-        collection = db["incidencia_mun"]
-        query_mun = {
+        collection = db["dfDefinitivo"]
+        query_nal = {
             "$and": [
-                {"Id_Municipio": IdUbic},
+                {"CVE_LUGAR": "P00"},
                 {"Aniomes": {"$gte": Aniomes_Ini}},
                 {"Aniomes": {"$lte": Aniomes_Fin}},
                 {"Id_Agrupador_Delito": IdAgrupDel},
             ]
         }
-        results_mun = collection.find(query_mun)
-        dfResUbi = pd.DataFrame(list(results_mun))
+        results_nal = collection.find(query_nal)
+        dfResNal = pd.DataFrame(list(results_nal))
+        if "_id" in dfResNal.columns:
+            dfResNal.drop(columns=["_id"], inplace=True)
     elif BASE_DE_DATOS == "postgresql":
-        query = f"SELECT * FROM incidencia_mun WHERE \"Id_Municipio\" = '{IdUbic}' AND \"Aniomes\" >= '{Aniomes_Ini}' AND \"Aniomes\" <= '{Aniomes_Fin}' AND \"Id_Agrupador_Delito\" = '{IdAgrupDel}'"
-        dfResUbi = pd.read_sql_query(query, engine)
+        query = f'SELECT * FROM "dfDefinitivo" WHERE "CVE_LUGAR" = \'P00\' AND "Aniomes" >= \'{Aniomes_Ini}\' AND "Aniomes" <= \'{Aniomes_Fin}\' AND "Id_Agrupador_Delito" = \'{IdAgrupDel}\''
+        dfResNal = pd.read_sql_query(query, engine)
+    dfResNal.rename(columns={"tasa": "tasa_nal"}, inplace=True)
 
-if "_id" in dfResUbi.columns:  # solo aplica si el dataframe vino de Mongodb
-    dfResUbi.drop(columns=["_id"], inplace=True)
+    # Aquí se fusionan los datos de ubicación con los nacionales
+    df = pd.merge(df, dfResNal, on="Aniomes")
+    df.sort_values(by="Aniomes", inplace=True)
 
-flag_resultados = bool(len(dfResUbi))
-if (
-    flag_resultados
-):  # si no hay recuperación de resultados se queda el dataframe original solo con Aniomes
-    df = pd.merge(df, dfResUbi, on="Aniomes", how="left").fillna(0)
+    # ---------------------------------------------------
+    # Contruir la gráfica
+    dftemp = df.copy()
+    dftemp["dt64"] = dftemp["Aniomes"].apply(get_dt64)
 
-# Recuperar los datos nacionales
-if BASE_DE_DATOS == "mongodb":
-    collection = db["incidencia_nal"]
-    query_nal = {
-        "$and": [
-            {"Aniomes": {"$gte": Aniomes_Ini}},
-            {"Aniomes": {"$lte": Aniomes_Fin}},
-            {"Id_Agrupador_Delito": IdAgrupDel},
-        ]
-    }
-    results_nal = collection.find(query_nal)
-    dfResNal = pd.DataFrame(list(results_nal))
-    if "_id" in dfResNal.columns:
-        dfResNal.drop(columns=["_id"], inplace=True)
-elif BASE_DE_DATOS == "postgresql":
-    query = f"SELECT * FROM incidencia_nal WHERE \"Aniomes\" >= '{Aniomes_Ini}' AND \"Aniomes\" <= '{Aniomes_Fin}' AND \"Id_Agrupador_Delito\" = '{IdAgrupDel}'"
-    dfResNal = pd.read_sql_query(query, engine)
+    years = mdates.YearLocator()
+    months = mdates.MonthLocator()
+    years_fmt = mdates.DateFormatter("%Y")
+    months_fmt = mdates.DateFormatter("%b")
+    fmt = mdates.DateFormatter("%Y-%m")
 
-# Aquí se fusionan los datos de ubicación con los nacionales
-df = pd.merge(df, dfResNal, on="Aniomes")
-df.sort_values(by="Aniomes", inplace=True)
-
-# ---------------------------------------------------
-# Contruir la gráfica
-dftemp = df.copy()
-dftemp["dt64"] = dftemp["Aniomes"].apply(get_dt64)
-
-years = mdates.YearLocator()
-months = mdates.MonthLocator()
-years_fmt = mdates.DateFormatter("%Y")
-months_fmt = mdates.DateFormatter("%b")
-fmt = mdates.DateFormatter("%Y-%m")
-
-fig, ax = plt.subplots(1, 1, figsize=(16.0, 10.0), layout="constrained")
-fig.set_constrained_layout_pads(
-    w_pad=2.0 / 12.0, h_pad=8.0 / 12.0, hspace=0.0, wspace=0.0
-)
-
-ax.bar(
-    "dt64",
-    "tasa",
-    data=dftemp,
-    width=AnchoBar,
-    color=selected_color_barra,
-    label="tasa municipal",
-)
-ax.plot(
-    "dt64",
-    "tasa_nal",
-    data=dftemp,
-    linewidth=AnchoLinea,
-    linestyle=tipo_linea,
-    color=selected_color_linea,
-    label="tasa nacional",
-)
-
-ax.bar_label(ax.containers[0], label_type="edge", fontsize=10, color="black")
-
-# ax.xaxis.set_major_locator(years)
-# ax.xaxis.set_major_locator(months)
-# ax.xaxis.set_major_formatter(years_fmt)
-ax.xaxis.set_major_formatter(fmt)
-
-ax.xaxis.set_minor_locator(months)
-# ax.xaxis.set_minor_formatter(months_fmt)
-
-ax.set_xlabel("Periodo", fontsize=14, color="black")
-ax.set_ylabel("Tasa delictiva", fontsize=14, color="black")
-
-titulo_grafica = (
-    "Tasa delictiva mensual de " + nom_agrupador_selecc + " \n" + nom_ubic_selecc
-)
-ax.set_title(titulo_grafica, fontsize=26, color="darkslategrey")
-
-ax.grid(which="major", alpha=0.2)
-fig.legend(loc="lower right", fontsize="10", shadow=True)
-
-st.pyplot(fig)
-
-# ---------------------------------------------------
-# Columnas de variación
-dftemp["Variacion"] = dftemp["tasa"].pct_change() * 100
-dftemp.replace([np.inf, -np.inf], np.nan, inplace=True)
-variacion_promedio = round(dftemp["Variacion"].mean(skipna=True), 1)
-txt_variacion = str(variacion_promedio) + "%"
-col1, col2 = st.columns(2)
-with col1:
-    st.metric(
-        label=":triangular_ruler: Variación mensual promedio",
-        value="_",
-        delta=txt_variacion,
-        delta_color="inverse",
+    fig, ax = plt.subplots(1, 1, figsize=(16.0, 10.0), layout="constrained")
+    fig.set_constrained_layout_pads(
+        w_pad=2.0 / 12.0, h_pad=8.0 / 12.0, hspace=0.0, wspace=0.0
     )
-# with col2:
-#    st.metric(label="Variación últimos tres meses", value="_", delta="-2%", delta_color= "inverse")
 
-# ---------------------------------------------------
-# Tabla de datos
-with st.expander(":page_with_curl: Ver tabla de datos"):
-    # st.table(dftemp[['Aniomes','tasa','tasa_nal']])
-    st.dataframe(dftemp[["Aniomes", "tasa", "tasa_nal"]])
+    ax.bar(
+        "dt64",
+        "tasa",
+        data=dftemp,
+        width=AnchoBar,
+        color=selected_color_barra,
+        label="tasa municipal",
+    )
+    ax.plot(
+        "dt64",
+        "tasa_nal",
+        data=dftemp,
+        linewidth=AnchoLinea,
+        linestyle=tipo_linea,
+        color=selected_color_linea,
+        label="tasa nacional",
+    )
 
+    ax.bar_label(ax.containers[0], label_type="edge", fontsize=10, color="black")
+
+    # ax.xaxis.set_major_locator(years)
+    # ax.xaxis.set_major_locator(months)
+    # ax.xaxis.set_major_formatter(years_fmt)
+    ax.xaxis.set_major_formatter(fmt)
+
+    ax.xaxis.set_minor_locator(months)
+    # ax.xaxis.set_minor_formatter(months_fmt)
+
+    ax.set_xlabel("Periodo", fontsize=14, color="black")
+    ax.set_ylabel("Tasa delictiva", fontsize=14, color="black")
+
+    titulo_grafica = (
+        "Tasa delictiva mensual de " + nom_agrupador_selecc + " \n" + nom_ubic_selecc
+    )
+    ax.set_title(titulo_grafica, fontsize=26, color="darkslategrey")
+
+    ax.grid(which="major", alpha=0.2)
+    fig.legend(loc="lower right", fontsize="10", shadow=True)
+
+    st.pyplot(fig)
+
+    # ---------------------------------------------------
+    # Columnas de variación
+    dftemp["Variacion"] = dftemp["tasa"].pct_change() * 100
+    dftemp.replace([np.inf, -np.inf], np.nan, inplace=True)
+    variacion_promedio = round(dftemp["Variacion"].mean(skipna=True), 1)
+    txt_variacion = str(variacion_promedio) + "%"
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric(
+            label=":triangular_ruler: Variación mensual promedio",
+            value="_",
+            delta=txt_variacion,
+            delta_color="inverse",
+        )
+    # with col2:
+    #    st.metric(label="Variación últimos tres meses", value="_", delta="-2%", delta_color= "inverse")
+
+    # ---------------------------------------------------
+    # Tabla de datos
+    with st.expander(":page_with_curl: Ver tabla de datos"):
+        # st.table(dftemp[['Aniomes','tasa','tasa_nal']])
+        st.dataframe(dftemp[["Aniomes", "tasa", "tasa_nal"]])
+
+with tab2:
+    st.write("Hola Mundo")
 # ---------------------------------------------------
 # Cierre de conexión
 client.close()
