@@ -11,7 +11,7 @@ import datetime
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 
-BASE_DE_DATOS = "postgresql"  # ['mongodb','postgresql']
+BASE_DE_DATOS = "mongodb"  # ['mongodb','postgresql']
 
 # Conexión a MongoDb
 uri = st.secrets["mongodb_uri"]
@@ -237,6 +237,8 @@ def get_dt64(Aniomes) -> np.datetime64:
 
 def get_ubicaciones(tipo_ubicacion):
     match tipo_ubicacion:
+        case "Nacional":
+            return dfLugar.loc[dfLugar["TIPO_LUGAR"] == "Pais", "NOM_LUGAR"]
         case "Entidades":
             return dfLugar.loc[dfLugar["TIPO_LUGAR"] == "Entidad", "NOM_LUGAR"]
         case "Metrópolis":
@@ -273,6 +275,7 @@ with st.sidebar.expander(":earth_americas: Control de ubicaciones"):
     tipo_ubicacion = st.radio(
         "Seleccione:",
         [
+            "Nacional",
             "Entidades",
             "Metrópolis",
             # "Municipios 800K+",
@@ -284,10 +287,20 @@ with st.sidebar.expander(":earth_americas: Control de ubicaciones"):
     )
 
     nom_ubic_selecc = st.selectbox(
-        ":round_pushpin: Seleccione ubicación:",
+        ":round_pushpin: Seleccione ubicación principal:",
         get_ubicaciones(tipo_ubicacion).sort_values(),
     )
-    if tipo_ubicacion == "Entidades":
+
+    if tipo_ubicacion == "Nacional":
+        IdUbic = list(
+            dfLugar.loc[
+                (dfLugar["TIPO_LUGAR"] == "Pais")
+                & (dfLugar["NOM_LUGAR"] == nom_ubic_selecc),
+                "CVE_LUGAR",
+            ]
+        )[0]
+
+    elif tipo_ubicacion == "Entidades":
         IdUbic = list(
             dfLugar.loc[
                 (dfLugar["TIPO_LUGAR"] == "Entidad")
@@ -331,6 +344,26 @@ with st.sidebar.expander(":earth_americas: Control de ubicaciones"):
 
 
 with st.sidebar.expander(":chart_with_upwards_trend: Formato de la gráfica"):
+    multi_seleccion_ubi = st.multiselect(
+        "Incluir adicional", ["Nacional", "Entidad", "Tendencia"], default="Nacional"
+    )
+    multi_seleccion_marcas = st.multiselect(
+        "Indicar marcas",
+        ["Línea", "Barra", "Línea", "Barra", "Línea", "Barra"],
+        default="Línea",
+    )
+    selected_color_1elem = st.color_picker(
+        "Seleccione color para 1er elemento:", "#2f4f4f"
+    )  # darkslategrey
+    selected_color_2elem = st.color_picker(
+        "Seleccione color para 2do elemento:", "#FF796C"
+    )  # salmon
+    selected_color_3elem = st.color_picker(
+        "Seleccione color para 3er elemento:", "#6cb6ef"
+    )
+
+
+with st.sidebar.expander(":chart_with_upwards_trend: Formato de la gráfica"):
     AnchoBar = st.select_slider(
         "Seleccione el ancho de barra:", options=np.arange(5, 20, 0.5), value=10.5
     )
@@ -340,17 +373,10 @@ with st.sidebar.expander(":chart_with_upwards_trend: Formato de la gráfica"):
     tipo_linea = st.selectbox(
         "Seleccione tipo de línea:", ["-", "--", "-.", ":", "None"]
     )
-    selected_color_barra = st.color_picker(
-        "Seleccione color para barra:", "#2f4f4f"
-    )  # darkslategrey
-    selected_color_linea = st.color_picker(
-        "Seleccione color para línea:", "#FF796C"
-    )  # salmon
 
 
 # Cuerpo Streamlit
 tab1, tab2 = st.tabs(["Grafica general", "Perfil de riesgo"])
-
 
 # Primera Tab
 with tab1:
@@ -438,25 +464,34 @@ with tab1:
         w_pad=2.0 / 12.0, h_pad=8.0 / 12.0, hspace=0.0, wspace=0.0
     )
 
-    ax.bar(
-        "dt64",
-        "tasa",
-        data=dftemp,
-        width=AnchoBar,
-        color=selected_color_barra,
-        label="tasa municipal",
-    )
-    ax.plot(
-        "dt64",
-        "tasa_nal",
-        data=dftemp,
-        linewidth=AnchoLinea,
-        linestyle=tipo_linea,
-        color=selected_color_linea,
-        label="tasa nacional",
-    )
-
-    ax.bar_label(ax.containers[0], label_type="edge", fontsize=10, color="black")
+    for index, elem in enumerate(range(0, 1)):
+        if index == 0:
+            eje_y = "tasa"
+        else:
+            eje_y = "tasa"
+            eje_y = multi_seleccion_ubi[index]
+        if multi_seleccion_marcas[index] == "Barra":
+            ax.bar(
+                "dt64",
+                eje_y,
+                data=dftemp,
+                width=AnchoBar,
+                color=selected_color_1elem,
+                label="tasa POR DEFINIR",
+            )
+            ax.bar_label(
+                ax.containers[0], label_type="edge", fontsize=10, color="black"
+            )
+        else:
+            ax.plot(
+                "dt64",
+                eje_y,
+                data=dftemp,
+                linewidth=AnchoLinea,
+                linestyle=tipo_linea,
+                color=selected_color_1elem,
+                label="tasa POR DEFINIR",
+            )
 
     # ax.xaxis.set_major_locator(years)
     # ax.xaxis.set_major_locator(months)
