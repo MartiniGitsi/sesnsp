@@ -98,7 +98,6 @@ def get_ubicaciones(catalogs, tipo_ubicacion, max_year):
             df_lugar_sel = df_lugar.loc[
                 df_lugar["TIPO_LUGAR"] == "Municipio", ["NOM_LUGAR", "CVE_LOCAL"]
             ]
-    df_lugar_sel.sort_values(by="CVE_LOCAL", inplace=True)
     return df_lugar_sel
 
 
