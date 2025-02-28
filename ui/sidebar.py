@@ -63,13 +63,16 @@ def render_location_controls(catalogs):
                 "Nacional",
                 "Entidades",
                 "Metrópolis",
+                "Municipios 800K+",
+                "Municipios 400K+",
+                "Municipios 100K+",
                 "Todos los municipios",
             ],
         )
 
         nom_ubic_selecc = st.selectbox(
             ":round_pushpin: Seleccione ubicación principal:",
-            get_ubicaciones(catalogs, tipo_ubicacion),
+            get_ubicaciones(catalogs, tipo_ubicacion, max_year),
         )
 
         # Get location ID based on selected location type
