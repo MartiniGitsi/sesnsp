@@ -26,7 +26,7 @@ def main():
     sidebar_options = render_sidebar(catalogs)
 
     # Create tabs
-    tab1, tab2 = st.tabs(["Grafica general", "Perfil de riesgo"])
+    tab1, tab2 = st.tabs(["Grafica general", "."])
 
     # Render content for each tab
     with tab1:
@@ -34,7 +34,6 @@ def main():
 
     with tab2:
         pass
-        # render_risk_tab()
 
     # Close database connections
     close_connections(client, engine)

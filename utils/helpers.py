@@ -39,15 +39,15 @@ def get_ubicaciones(catalogs, tipo_ubicacion, max_year):
     match tipo_ubicacion:
         case "Nacional":
             df_lugar_sel = df_lugar.loc[
-                df_lugar["TIPO_LUGAR"] == "Pais", ["NOM_LUGAR", "CVE_LOCAL"]
+                df_lugar["TIPO_LUGAR"] == "Pais", ["NOM_LUGAR", "IndexOrder"]
             ]
         case "Entidades":
             df_lugar_sel = df_lugar.loc[
-                df_lugar["TIPO_LUGAR"] == "Entidad", ["NOM_LUGAR", "CVE_LOCAL"]
+                df_lugar["TIPO_LUGAR"] == "Entidad", ["NOM_LUGAR", "IndexOrder"]
             ]
         case "Metrópolis":
             df_lugar_sel = df_lugar.loc[
-                df_lugar["TIPO_LUGAR"] == "Metropoli", ["NOM_LUGAR", "CVE_LOCAL"]
+                df_lugar["TIPO_LUGAR"] == "Metropoli", ["NOM_LUGAR", "IndexOrder"]
             ]
         case "Municipios 800K+":
             df_poblacion_extendida = df_poblacion_extendida.loc[
@@ -58,12 +58,12 @@ def get_ubicaciones(catalogs, tipo_ubicacion, max_year):
             ]
             df_lugar_sel = df_lugar.loc[
                 df_lugar["TIPO_LUGAR"] == "Municipio",
-                ["CVE_LUGAR", "NOM_LUGAR", "CVE_LOCAL"],
+                ["CVE_LUGAR", "NOM_LUGAR", "IndexOrder"],
             ]
             df_lugar_sel = pd.merge(
                 df_lugar_sel, df_poblacion_extendida, how="inner", on="CVE_LUGAR"
             )
-            df_lugar_sel = df_lugar_sel[["NOM_LUGAR", "CVE_LOCAL"]]
+            df_lugar_sel = df_lugar_sel[["NOM_LUGAR", "IndexOrder"]]
         case "Municipios 400K+":
             df_poblacion_extendida = df_poblacion_extendida.loc[
                 (df_poblacion_extendida["Year"] == max_year)
@@ -73,12 +73,12 @@ def get_ubicaciones(catalogs, tipo_ubicacion, max_year):
             ]
             df_lugar_sel = df_lugar.loc[
                 df_lugar["TIPO_LUGAR"] == "Municipio",
-                ["CVE_LUGAR", "NOM_LUGAR", "CVE_LOCAL"],
+                ["CVE_LUGAR", "NOM_LUGAR", "IndexOrder"],
             ]
             df_lugar_sel = pd.merge(
                 df_lugar_sel, df_poblacion_extendida, how="inner", on="CVE_LUGAR"
             )
-            df_lugar_sel = df_lugar_sel[["NOM_LUGAR", "CVE_LOCAL"]]
+            df_lugar_sel = df_lugar_sel[["NOM_LUGAR", "IndexOrder"]]
         case "Municipios 100K+":
             df_poblacion_extendida = df_poblacion_extendida.loc[
                 (df_poblacion_extendida["Year"] == max_year)
@@ -88,15 +88,15 @@ def get_ubicaciones(catalogs, tipo_ubicacion, max_year):
             ]
             df_lugar_sel = df_lugar.loc[
                 df_lugar["TIPO_LUGAR"] == "Municipio",
-                ["CVE_LUGAR", "NOM_LUGAR", "CVE_LOCAL"],
+                ["CVE_LUGAR", "NOM_LUGAR", "IndexOrder"],
             ]
             df_lugar_sel = pd.merge(
                 df_lugar_sel, df_poblacion_extendida, how="inner", on="CVE_LUGAR"
             )
-            df_lugar_sel = df_lugar_sel[["NOM_LUGAR", "CVE_LOCAL"]]
+            df_lugar_sel = df_lugar_sel[["NOM_LUGAR", "IndexOrder"]]
         case "Todos los municipios":
             df_lugar_sel = df_lugar.loc[
-                df_lugar["TIPO_LUGAR"] == "Municipio", ["NOM_LUGAR", "CVE_LOCAL"]
+                df_lugar["TIPO_LUGAR"] == "Municipio", ["NOM_LUGAR", "IndexOrder"]
             ]
     return df_lugar_sel
 

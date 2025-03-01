@@ -4,6 +4,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 from data.queries import get_crime_data, get_estatal_crime_data, get_national_crime_data
+from ui.plotlyviz import create_plotly_risk_chart
 from ui.visualization import create_crime_chart, calculate_variations
 from utils.helpers import get_chart_parameters, get_trend
 
@@ -95,3 +96,13 @@ def render_general_tab(catalogs, sidebar_options, client, engine):
 
     with st.expander("Ver datos"):
         st.dataframe(df)
+
+    st.plotly_chart(
+        create_plotly_risk_chart(
+            df,
+            chart_parameteres,
+            sidebar_options,
+            sidebar_options["nom_agrupador_selecc"],
+            sidebar_options["nom_ubic_selecc"],
+        )
+    )

@@ -71,10 +71,11 @@ def render_location_controls(catalogs):
         )
 
         df_posibles_lugares = get_ubicaciones(catalogs, tipo_ubicacion, max_year)
-        df_posibles_lugares.sort_values(by="CVE_LOCAL", inplace=True)
+        df_posibles_lugares.sort_values(by="IndexOrder", inplace=True)
 
         nom_ubic_selecc = st.selectbox(
-            ":round_pushpin: Seleccione ubicación principal:", df_posibles_lugares
+            ":round_pushpin: Seleccione ubicación principal:",
+            df_posibles_lugares,
         )
 
         # Get location ID based on selected location type
